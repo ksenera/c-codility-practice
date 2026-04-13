@@ -1,7 +1,8 @@
 # c-codility-practice
 
 C/C++ interview prep engine. Built for GM Codility + beyond.
-Drills DSA families in C first, C++ later. Every problem is derived from first principles — no tutorial-following.
+Derives DSA families from first principles in C first, C++ later.
+Feeds directly into the Obsidian "god mode" vault — no duplicate logging.
 
 ---
 
@@ -13,8 +14,9 @@ Drills DSA families in C first, C++ later. Every problem is derived from first p
 | C++ (g++) | Added later for OOP pattern drills |
 | GDB | Register-level memory inspection during pointer drills |
 | Valgrind | Memory leak detection |
-| Docker | Isolated ARM64 compile environment (matches Raspberry Pi) |
-| Git | Version control + commit log as learning history |
+| Docker | Isolated ARM64 Ubuntu environment (matches Raspberry Pi architecture) |
+| Git | Version control — commit log doubles as learning history |
+| Obsidian | "god mode" vault — logger writes problem notes directly into it |
 
 ---
 
@@ -22,12 +24,16 @@ Drills DSA families in C first, C++ later. Every problem is derived from first p
 
 ```
 c-codility-practice/
-├── Dockerfile              # ARM64 Ubuntu + gcc + g++ + gdb + valgrind
-├── Makefile                # compile any .c or .cpp file
-├── run.sh                  # quick compile+run: ./run.sh filename
-├── logger.c                # C command-line session logger (argc/argv drill)
-├── .gitignore              # ignores *.out *.o binaries
+├── Dockerfile              # ARM64 Ubuntu 22.04 + gcc + g++ + gdb + valgrind
+├── Makefile                # compile any .c or .cpp file with one command
+├── run.sh                  # launches Docker with both mounts (code + vault)
+├── logger.c                # C program — prompts scaffold questions, writes to Obsidian
+├── .gitignore              # ignores *.out *.o a.out binaries
 ├── README.md               # this file
+│
+├── Encoding/               # blank recall sessions — no reference allowed
+├── Reference/              # C/C++ vocab, mechanics, pointer notes
+├── Tracking/               # session_log.txt — raw terminal error log
 │
 ├── hashmap/                # HashMap family — count, track, lookup
 ├── two_pointers/           # Two Pointers family — sorted arrays, pairs
@@ -39,12 +45,66 @@ c-codility-practice/
 └── dp/                     # DP family — memoization, tabulation
 ```
 
-Each folder will contain:
+Each family folder contains:
 ```
 family/
-├── solution.c          # implementation
-├── solution_test.c     # assert-based TDD
-└── notes.md            # invariant, scaffold, error log for this family
+├── solution.c          # derived implementation — blank IDE, no reference
+├── solution_test.c     # assert-based TDD test file
+└── notes.md            # invariant, anchor sentence, error log for this family
+```
+
+---
+
+## Obsidian Integration
+
+Vault path: `/Users/kushikasenera/god mode`
+
+The logger writes `.md` files matching `tpl-problem.md` format directly into:
+```
+/vault/02_PROBLEMS/LC-XXXX-Problem-Name.md
+```
+
+Inside Docker the vault is mounted at `/vault`. Open Obsidian and the note
+is already there — YAML frontmatter intact, linkable to `03_KERNELS/`.
+
+### Mount both volumes (already in run.sh)
+```bash
+docker run -it --rm \
+  -v $(pwd):/code \
+  -v "/Users/kushikasenera/god mode":/vault \
+  c-practice
+```
+
+### Verify vault is mounted inside Docker
+```bash
+ls /vault
+# should show: 01_DAILY  02_PROBLEMS  03_KERNELS  04_ERRORS  05_VARIANTS  06_DASHBOARDS
+```
+
+### Logger output format (matches tpl-problem.md)
+```markdown
+---
+type: problem
+status: draft
+created: 2026-04-12 23:45
+kernel_guess: graphs
+errors: []
+variants: []
+---
+
+Clues:: n nodes, edges list, count groups
+Invariant:: visit neighbors you haven't seen, increment counter per new start
+Result::
+Links_kernels:: [[BFS-DFS-Graphs-Grids-]]
+Links_recording::
+
+## Plan
+- Kernel chosen & why: BFS/DFS — count disconnected groups
+- State / invariant: visited[] array, iterate all nodes
+
+## Reflection
+- What slowed me?
+- Next time prompt:
 ```
 
 ---
@@ -52,70 +112,59 @@ family/
 ## Docker Setup
 
 ### What the Dockerfile does
-Builds an ARM64 Ubuntu 22.04 container with gcc, g++, gdb, valgrind pre-installed.
-ARM64 matches your M1 Mac natively — no emulation overhead.
+ARM64 Ubuntu 22.04 + gcc + g++ + gdb + valgrind.
+ARM64 = M1 Mac runs it natively, no emulation, same arch as Raspberry Pi.
 
-### Build the image (one time)
+### Build image (one time, or after Dockerfile changes)
 ```bash
 docker build -t c-practice .
 ```
 
-### Start a session
+### Start a session (use run.sh — mounts both code and vault)
 ```bash
 cd ~/c-codility-practice
-docker run -it --rm -v $(pwd):/code c-practice
+./run.sh
+```
+
+Or manually:
+```bash
+docker run -it --rm \
+  -v $(pwd):/code \
+  -v "/Users/kushikasenera/god mode":/vault \
+  c-practice
 ```
 
 ### Docker flag reference
 ```
 docker build
-  -t c-practice     tag/name the image "c-practice"
-  .                 build context = current directory (finds Dockerfile here)
+  -t c-practice       tag/name the image "c-practice"
+  .                   build context = current directory (finds Dockerfile here)
 
 docker run
-  -i                interactive — keeps stdin open so you can type
-  -t                allocate a terminal (makes it feel like a real shell)
-  -it               always used together for interactive sessions
-  --rm              delete container on exit — keeps things clean, state lives in files
-  -v $(pwd):/code   volume mount
-                    $(pwd) = your Mac's current directory
-                    /code  = where it appears inside the container
-                    same files, two views — edit on Mac, compile in Docker
+  -i                  interactive — keeps stdin open so you can type
+  -t                  allocate a pseudo-terminal (makes it feel like a real shell)
+  -it                 always together for interactive sessions
+  --rm                delete container on exit — state lives in mounted files not container
+  -v $(pwd):/code     Mac's c-codility-practice/ appears at /code inside Docker
+  -v "path":/vault    Mac's Obsidian vault appears at /vault inside Docker
+  $(pwd)              shell expands to absolute path of current directory
 ```
 
 ### Confirm you're inside Docker
-Your prompt changes from:
 ```
-kushikasenera@e6:e4:f0:e0:e6:94 ~%        ← Mac
-```
-to:
-```
-root@696fdfb6224d:/code#                   ← inside Docker
-```
-
-### Verify tools
-```bash
-gcc --version
-g++ --version
-gdb --version
-valgrind --version
-ls    # should show your folders
+kushikasenera@e6:e4:f0:e0:e6:94 ~%     <- Mac terminal
+root@696fdfb6224d:/code#                <- inside Docker
 ```
 
 ---
 
 ## Compile & Run
 
-### Quick script
+### Makefile (preferred)
 ```bash
-./run.sh hashmap/solution       # compiles hashmap/solution.c and runs it
-```
-
-### Makefile
-```bash
-make hashmap/solution.out       # compiles with -Wall -Wextra -g
-./hashmap/solution.out
-make clean                      # removes all .out files
+make graphs/solution.out        # compiles graphs/solution.c with -Wall -Wextra -g
+./graphs/solution.out           # run it
+make clean                      # delete all .out binaries
 ```
 
 ### Manual gcc
@@ -123,49 +172,160 @@ make clean                      # removes all .out files
 gcc -Wall -Wextra -g -o solution solution.c && ./solution
 ```
 
-### With GDB (register inspection)
+### With GDB — register inspection and memory viewing
 ```bash
-gcc -g -o solution solution.c   # -g = include debug symbols
+gcc -g -o solution solution.c       # must compile with -g for debug symbols
 gdb ./solution
-(gdb) layout regs               # open register dashboard
-(gdb) break main                # set breakpoint at main
-(gdb) run                       # execute — watch registers change live
-(gdb) x/8xb &variable          # dump raw memory bytes at any variable
+(gdb) layout regs                   # open register dashboard — watch rax rsp rip live
+(gdb) break main                    # set breakpoint at main
+(gdb) run                           # execute — stops at breakpoint
+(gdb) next                          # step one line forward
+(gdb) print x                       # print value of variable x
+(gdb) x/8xb &variable              # dump 8 raw bytes at variable's memory address
+(gdb) x/4xw &arr                   # dump array as 4 hex words
 (gdb) quit
 ```
 
-### With Valgrind (memory leak check)
+### With Valgrind — memory leak detection
 ```bash
 valgrind --leak-check=full ./solution
+# "definitely lost: 0 bytes" = clean
+# anything else = memory leak — fix before committing
 ```
 
 ---
 
 ## Compile Flag Reference
 ```
--Wall       enable all standard warnings
--Wextra     enable extra warnings beyond -Wall
--g          include debug symbols (required for GDB)
--o name     name the output binary
+-Wall       all standard warnings
+-Wextra     extra warnings Wall misses (unused params, missing return, etc.)
+-g          embed debug symbols — required for GDB to show variable names + line numbers
+-o name     name the output binary (default is a.out if omitted)
+&&          run second command only if first succeeds
 ```
 
 ---
 
-## Logger
-C command-line session logger. Teaches argc/argv, fopen, fprintf, time.h.
+## Important Linux Commands (inside Docker)
 
+### Navigation
 ```bash
-gcc -Wall -Wextra -o logger logger.c
-./logger session_log.txt "your note here"
-./logger errors.txt "forgot malloc needs sizeof — wrote malloc(Node) not malloc(sizeof(Node))"
-grep "malloc" errors.txt    # retrieve by keyword
+pwd                     # print working directory — absolute path of where I am
+ls                      # list files in current directory
+ls -la                  # list all files including hidden, with permissions + sizes
+cd /code                # go to mounted C project
+cd /vault               # go to mounted Obsidian vault
+cd /vault/02_PROBLEMS   # go directly to problems folder in vault
+cd ..                   # go up one directory
+```
+
+### File operations
+```bash
+touch file.c            # create empty file
+mkdir foldername        # create directory
+cp src dest             # copy file
+mv src dest             # move or rename file
+rm file                 # delete file (no undo)
+cat file.c              # print file contents to terminal
+head -20 file.c         # print first 20 lines
+```
+
+### Search and inspect
+```bash
+grep "malloc" errors.txt            # find lines containing "malloc"
+grep -r "visited" graphs/           # search recursively in folder
+grep -n "TODO" solution.c           # show line numbers with matches
+find . -name "*.c"                  # find all .c files from current directory
+find . -name "*.md"                 # find all markdown files
+wc -l solution.c                    # count lines in file
+```
+
+### Compilation shortcuts
+```bash
+gcc -Wall -Wextra -g -o prog prog.c && ./prog     # compile and run in one line
+make clean && make graphs/solution.out             # clean then recompile
+```
+
+### Git (run from Mac terminal, not inside Docker)
+```bash
+git status                          # what changed?
+git add file.c                      # stage specific file
+git add .                           # stage everything
+git commit -m "feat(graphs): LC323 connected components"
+git push                            # push to github
+git log --oneline                   # compact commit history
+git diff file.c                     # what changed since last commit
+```
+
+---
+
+## TDD — Assert Based (current tier)
+
+```c
+#include <assert.h>
+
+// write asserts BEFORE implementing the function — TDD
+assert(count_components(5, edges1, 3) == 2);
+assert(count_components(5, edges2, 4) == 1);
+
+// assert passes = silent
+// assert fails  = crash with file + line number printed
+```
+
+Rule: zero gcc warnings before committing. Zero valgrind leaks before committing.
+Next tier: Unity framework after first 3 problems solved.
+
+---
+
+## Logger — Scaffold Prompts
+
+`./logger` asks these questions in order, then writes a formatted `.md` to `/vault/02_PROBLEMS/`:
+
+```
+1. Problem name + number?       → filename + title
+2. Family prediction?           → kernel_guess (YAML)
+3. Signal — what triggered it?  → Clues::
+4. Invariant — one sentence?    → Invariant::
+5. What slowed you?             → Reflection: What slowed me?
+6. Next time prompt?            → Reflection: Next time prompt:
+```
+
+---
+
+## Drill Protocol (per problem)
+
+```
+1. PREDICTION   → what family? say it before reading fully
+2. SIGNAL       → what word/pattern triggered that?
+3. SCAFFOLD     → plain English — what does one step do?
+4. ASSERTS      → write expected input/output as assert() calls
+5. IMPLEMENT    → blank editor, no reference
+6. COMPILE      → gcc -Wall -Wextra — zero warnings
+7. VALGRIND     → zero leaks
+8. LOG          → ./logger writes note to /vault/02_PROBLEMS/
+9. COMMIT       → git commit with conventional commit message
+```
+
+---
+
+## Git Commit Taxonomy
+
+```
+feat(family):       new problem implementation
+  feat(graphs):     LC323 connected components
+  feat(dp):         LC64 minimum path sum
+fix(family):        bug fix in existing solution
+build(docker):      Dockerfile or run.sh changes
+build(make):        Makefile changes
+docs(readme):       documentation updates
+refactor:           restructure without behaviour change
+test:               adding or fixing assert-based tests
+chore:              gitignore, cleanup, non-code changes
 ```
 
 ---
 
 ## Problem List — GM Codility Target
-
-Pulled from GM's confirmed LeetCode frequency list:
 
 | Freq | Problem | Difficulty | Family | Status |
 |------|---------|-----------|--------|--------|
@@ -180,41 +340,29 @@ Pulled from GM's confirmed LeetCode frequency list:
 
 ---
 
-## Drill Protocol (per problem)
+## Anchor Sentences
 
 ```
-PREDICTION  → what family does this belong to? why?
-SIGNAL      → what in the problem triggered that prediction?
-SCAFFOLD    → plain English solution before any code
-ASSERTS     → write test cases first (TDD)
-IMPLEMENT   → blank IDE, no reference
-COMPILE     → gcc -Wall -Wextra, zero warnings
-LOG         → ./logger errors.txt "what blanked and why"
-COMMIT      → git commit -m "feat(graphs): LC323 connected components"
-```
-
----
-
-## Git Commit Taxonomy
-
-```
-feat(family):   new problem implementation
-fix(family):    bug fix in existing solution
-build(docker):  Dockerfile or build system changes
-docs(readme):   documentation updates
-refactor:       restructure without changing behaviour
-test:           adding or fixing assert-based tests
+GRAPHS:       "visit neighbors you haven't seen — visited[] is the lock"
+HASHMAP:      "array indexed by value — O(1) store and retrieve"
+TWO POINTERS: "squeeze inward until they meet"
+SLIDING WIN:  "expand right until broken, shrink left until fixed"
+LINKED LIST:  "save next, reverse pointer, slide forward"
+STACK:        "last in first out — what did I just push?"
+DP:           "current answer depends on previous answer — fill the table"
+TREES:        "ask None, ask one node, combine children"
 ```
 
 ---
 
 ## Status
-- [x] Docker environment built
-- [x] GDB + Valgrind installed
-- [x] Folder structure created
+- [x] Docker environment built (gcc + g++ + gdb + valgrind)
+- [x] Obsidian vault mounted at /vault via run.sh
+- [x] Folder structure created (8 families + Encoding + Reference + Tracking)
 - [x] Makefile added
-- [x] Logger in progress
-- [ ] C phoneme warmup (warmup.c)
+- [x] Git repo live — github.com/ksenera/c-codility-practice
+- [ ] logger.c — you are writing this now
+- [ ] warmup.c — C phoneme drill
 - [ ] LC323 Connected Components
 - [ ] LC41 First Missing Positive
 - [ ] LC64 Minimum Path Sum
