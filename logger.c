@@ -14,6 +14,8 @@ int main()
     // reused for each answer to 10 log encode/transfer prompts
     char buffer[500];
 
+    printf("Problem name (e.g. LC0323-Connected-Components): ");
+    fgets(filename, 200, stdin);
 
     return 0;
 }
