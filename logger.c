@@ -17,5 +17,7 @@ int main()
     printf("Problem name (e.g. LC0323-Connected-Components): ");
     fgets(filename, 200, stdin);
 
+    FILE *f = fopen(...)
+        if (!f) { printf("ERROR: cannot open file\n"); return 1; }
     return 0;
 }
