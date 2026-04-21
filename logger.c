@@ -21,4 +21,8 @@ int main()
     FILE *f = fopen(filename, "a");
         if (!f) { printf("ERROR: cannot open file\n"); return 1; }
     return 0;
+
+    fopen:
+        time_t now = time(NULL)
+        char *ts = ctime(&now)
 }
