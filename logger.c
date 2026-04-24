@@ -27,4 +27,8 @@ int main()
         char *ts = ctime(&now)
         ts[strcspn(ts, "\n")] = '\0';          // strip newline from ctime output
         fprintf(f, "# %s\n*%s*\n\n", filename, ts);  
+
+    const char *prompts[10] = {
+        "Problem summary: "
+    }
 }
