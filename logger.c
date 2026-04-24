@@ -25,4 +25,6 @@ int main()
     fopen:
         time_t now = time(NULL)
         char *ts = ctime(&now)
+        ts[strcspn(ts, "\n")] = '\0';          // strip newline from ctime output
+        fprintf(f, "# %s\n*%s*\n\n", filename, ts);  
 }
